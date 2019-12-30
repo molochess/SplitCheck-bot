@@ -101,6 +101,28 @@ public class MyAbilityExtension implements AbilityExtension {
                 .build();
     }
 
+    public Ability showPeople(){
+        return Ability
+                .builder()
+                .name("people")
+                .locality(Locality.ALL)
+                .privacy(Privacy.PUBLIC)
+                .action(ctx -> {
+                    String message = "Members:";
+                    //for (Transaction transaction: transactionList) {
+                    for (Account account: accountList) {
+                        if (account.getChatId() == ctx.chatId()) {
+                            List<Integer> peopleList = account.getUserId();
+                            for (Integer person : peopleList ) {
+                                message += String.format("\n%s: %s", person, account.getUserBalance(person));
+                            }
+                        }
+                    }
+                    silent.send(message, ctx.chatId());
+                })
+                .build();
+    }
+
     public Ability stop(){
         return Ability
                 .builder()
@@ -117,7 +139,7 @@ public class MyAbilityExtension implements AbilityExtension {
                       //  if (transaction.getChatId() == ctx.chatId()){
                         //    transactionList.remove(transaction);
                         //}
-                    //}
+                    //
                     silent.send("Account was cleared", ctx.chatId());
                 })
                 .build();

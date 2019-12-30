@@ -15,23 +15,23 @@ public class Account {
     }
 
     public Long getChatId(){
-        return chatId;
+        return this.chatId;
     }
     public List<Transaction> getTransactions(){
-        return transactions;
+        return this.transactions;
     }
     public List<Integer> getUserId() {
-        return users;
+        return this.users;
     }
     public float getBalance(){
-        return balance;
+        return this.balance;
     }
     public void addTransactions (Transaction transaction){
-        transactions.add(transaction);
+        this.transactions.add(transaction);
     }
-    public float getUserBalance(Integer userId){
+    public float getUserBalance(Integer userId) {
         float userBalance = 0;
-        for (Transaction transaction:transactions) {
+        for (Transaction transaction:this.transactions) {
             if (transaction.getUserId() == userId) {
                 userBalance += transaction.getSum();
             }
@@ -40,7 +40,7 @@ public class Account {
     }
     public List<Integer> getDebtors(){
         List<Integer> debtors = new LinkedList<>();
-        for (Integer user:users) {
+        for (Integer user:this.users) {
             if (getUserBalance(user) > 0){
                 debtors.add(user);
             }
@@ -48,7 +48,7 @@ public class Account {
         return debtors;
     }
     void clearAccount(){
-        transactions.clear();
-        users.clear();
+        this.transactions.clear();
+        this.users.clear();
     }
 }
