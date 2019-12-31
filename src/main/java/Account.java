@@ -1,10 +1,12 @@
+import org.telegram.telegrambots.meta.api.objects.User;
+
 import java.util.LinkedList;
 import java.util.List;
 
 public class Account {
     private Long chatId;
     private List<Transaction> transactions;
-    private List<Integer> users;
+    private List<User> users;
     private float balance;
 
     Account(Long chatId) {
@@ -20,7 +22,7 @@ public class Account {
     public List<Transaction> getTransactions(){
         return this.transactions;
     }
-    public List<Integer> getUserId() {
+    public List<User> getUserId() {
         return this.users;
     }
     public float getBalance(){
@@ -29,26 +31,45 @@ public class Account {
     public void addTransactions (Transaction transaction){
         this.transactions.add(transaction);
     }
-    public float getUserBalance(Integer userId) {
+    public float getUserBalance(User user) {
         float userBalance = 0;
         for (Transaction transaction:this.transactions) {
-            if (transaction.getUserId() == userId) {
-                userBalance += transaction.getSum();
+            if (Math.abs(transaction.getUser().getId() - user.getId()) == 0) {
+                if (transaction.getSum() < 0){
+                    userBalance += transaction.getSum()/users.size();
+                } else {
+                    userBalance += transaction.getSum();
+                }
             }
         }
         return userBalance;
     }
-    public List<Integer> getDebtors(){
-        List<Integer> debtors = new LinkedList<>();
-        for (Integer user:this.users) {
-            if (getUserBalance(user) > 0){
+    public List<User> getDebtors(){
+        List<User> debtors = new LinkedList<>();
+        for (User user:this.users) {
+            if (getUserBalance(user) < 0){
                 debtors.add(user);
             }
         }
         return debtors;
     }
+    public List<User> getOverpayers(){
+        List<User> overpayers = new LinkedList<>();
+        for (User user:this.users) {
+            if (getUserBalance(user) < 0){
+                overpayers.add(user);
+            }
+        }
+        return overpayers;
+    }
     void clearAccount(){
         this.transactions.clear();
         this.users.clear();
+    }
+    void updateBalance(float sum) {
+        this.balance += sum;
+    }
+    void addUser(User user) {
+        this.users.add(user);
     }
 }

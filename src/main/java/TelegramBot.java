@@ -22,6 +22,6 @@ public class TelegramBot extends AbilityBot {
     }
     @Override
     public String getBotToken() {
-        return  BOT_TOKEN;
+        return BOT_TOKEN;
     }
 }

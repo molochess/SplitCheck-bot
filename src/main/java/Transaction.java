@@ -1,12 +1,14 @@
+import org.telegram.telegrambots.meta.api.objects.User;
+
 public class Transaction {
     private float sum;
-    private Integer userId;
+    private User user;
     private  Long chatId;
     private String comment;
 
-    Transaction(float sum, Integer userId, Long chatId, String comment){
+    Transaction(float sum, User user, Long chatId, String comment){
         this.sum = sum;
-        this.userId = userId;
+        this.user = user;
         this.chatId = chatId;
         this.comment = comment;
     }
@@ -14,8 +16,8 @@ public class Transaction {
     public float getSum(){
         return sum;
     }
-    public Integer getUserId(){
-        return userId;
+    public User getUser(){
+        return user;
     }
     public Long getChatId(){
         return chatId;

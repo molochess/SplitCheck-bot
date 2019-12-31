@@ -5,15 +5,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class InlineKeyboard {
-    public static SendMessage withButtonsRegistration(Long chatId) {
-        InlineKeyboardMarkup keyboard = new InlineKeyboardMarkup();
+    InlineKeyboardMarkup keyboard = new InlineKeyboardMarkup();
+
+    public SendMessage withButtonsRegistration() {
         List<List<InlineKeyboardButton>> row = new ArrayList<>();
         List<InlineKeyboardButton> rowInline = new ArrayList<>();
-        InlineKeyboardButton buttonJoin = new InlineKeyboardButton().setText("Присоединиться");
+        InlineKeyboardButton buttonJoin = new InlineKeyboardButton().setText("Join");
         rowInline.add(buttonJoin);
         row.add(rowInline);
-        keyboard.setKeyboard(row);
-        return new SendMessage().setChatId(chatId).setReplyMarkup(keyboard).setText("arrr");
+        this.keyboard.setKeyboard(row);
+        return new SendMessage().setReplyMarkup(this.keyboard);
     }
  /*   public static void withButtonsAddTransaction() {
 //         сделать командой
