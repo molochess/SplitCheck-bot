@@ -31,15 +31,14 @@ public class Account {
     public void addTransactions (Transaction transaction){
         this.transactions.add(transaction);
     }
+
     public float getUserBalance(User user) {
         float userBalance = 0;
-        for (Transaction transaction:this.transactions) {
-            if (Math.abs(transaction.getUser().getId() - user.getId()) == 0) {
-                if (transaction.getSum() < 0){
-                    userBalance += transaction.getSum()/users.size();
-                } else {
-                    userBalance += transaction.getSum();
-                }
+        for (Transaction transaction : this.transactions) {
+            if (transaction.getSum() < 0) {
+                userBalance += transaction.getSum() / users.size();
+            } else if (Math.abs(transaction.getUser().getId() - user.getId()) == 0) {
+                userBalance += transaction.getSum();
             }
         }
         return userBalance;
@@ -56,7 +55,7 @@ public class Account {
     public List<User> getOverpayers(){
         List<User> overpayers = new LinkedList<>();
         for (User user:this.users) {
-            if (getUserBalance(user) < 0){
+            if (getUserBalance(user) > 0){
                 overpayers.add(user);
             }
         }

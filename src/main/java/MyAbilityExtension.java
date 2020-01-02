@@ -2,10 +2,8 @@ import org.telegram.abilitybots.api.db.DBContext;
 import org.telegram.abilitybots.api.objects.Ability;
 import org.telegram.abilitybots.api.objects.Locality;
 import org.telegram.abilitybots.api.objects.Privacy;
-import org.telegram.abilitybots.api.objects.Reply;
 import org.telegram.abilitybots.api.sender.SilentSender;
 import org.telegram.abilitybots.api.util.AbilityExtension;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.User;
 
 import java.util.ArrayList;
@@ -16,11 +14,12 @@ public class MyAbilityExtension implements AbilityExtension {
     private SilentSender silent;
     DBContext db;
     private List<Account> accountList= new ArrayList<Account>();
-    //private List<Transaction> transactionList = new ArrayList<Transaction>();
+
     public MyAbilityExtension(SilentSender silent, DBContext db) {
         this.silent = silent;
         this.db = db;
     }
+
     public Ability start() {
         return Ability
                 .builder()
@@ -31,16 +30,22 @@ public class MyAbilityExtension implements AbilityExtension {
                 .action(ctx -> {
                     Account account = new Account(ctx.chatId());
                     accountList.add(account);
-                //    InlineKeyboard keyboard = new InlineKeyboard();
-                //    SendMessage message = keyboard.withButtonsRegistration();
-                    silent.send("mhe", ctx.chatId());
-               //     silent.execute(message.setChatId(ctx.chatId()).setText("hhh"));
-               //   new SendMessage().setChatId(ctx.chatId()).setReplyMarkup(InlineKeyboard.withButtonsRegistration());
+                    silent.send("Hello! This bot was created to help you and your comrades when you need to split common expenses. " +
+                            "Hope you'll love it!)", ctx.chatId());
+                    silent.send("Press /start to begin use. Then everyone in the chat who wants join this account need to press /join", ctx.chatId());
+                    silent.send("To add new purchase or other expense send /purchase with a sum of it and short comment" +
+                            "\nTo add your pay send /pay with sum of payment and short comment" +
+                            "\nIf you need balance of this account press /balance" +
+                            "\n/members shows a list of people who joined account whit their oun balance" +
+                            "\n/debtors shows list of malicious debtors" +
+                            "\n/overpay shows list of the most generous people in company (they paid too much)" +
+                            "\n/trans shows full list of transactions for this account" +
+                            "\n/stop clears account history (deletes members and transactions)", ctx.chatId());
                 })
                 .build();
     }
 
-    public Ability join(){
+    public Ability join() {
         return Ability
                 .builder()
                 .name("join")
@@ -80,6 +85,7 @@ public class MyAbilityExtension implements AbilityExtension {
                 })
                 .build();
     }
+
     public Ability pay() {
         return Ability
                 .builder()
@@ -90,7 +96,7 @@ public class MyAbilityExtension implements AbilityExtension {
                 .action(ctx -> {
                     float sum = Float.parseFloat(ctx.firstArg());
                     String comment = ctx.secondArg();
-                    Transaction tr =  new Transaction(sum, ctx.user(), ctx.chatId(), comment);
+                    Transaction tr = new Transaction(sum, ctx.user(), ctx.chatId(), comment);
                     for (Account account : accountList) {
                         if (Math.abs(account.getChatId() - ctx.chatId()) == 0) {
                             account.addTransactions(tr);
@@ -102,23 +108,23 @@ public class MyAbilityExtension implements AbilityExtension {
                 .build();
     }
 
- /*   public Ability showAll(){
-        return Ability
-                .builder()
-                .name("all")
-                .locality(Locality.ALL)
-                .privacy(Privacy.PUBLIC)
-                .action(ctx -> {
-                    String message = String.format("%s", ctx.chatId());
-                    for (Account account: accountList) {
-                        if (Math.abs(account.getChatId() - ctx.chatId()) == 0)
-                        message += String.format("\n%s yes", account.getChatId());
-                    }
-                    silent.send(message, ctx.chatId());
-                })
-                .build();
-    }*/
-    public Ability showTransactions(){
+    /*   public Ability showAll(){
+           return Ability
+                   .builder()
+                   .name("all")
+                   .locality(Locality.ALL)
+                   .privacy(Privacy.PUBLIC)
+                   .action(ctx -> {
+                       String message = String.format("%s", ctx.chatId());
+                       for (Account account: accountList) {
+                           if (Math.abs(account.getChatId() - ctx.chatId()) == 0)
+                           message += String.format("\n%s yes", account.getChatId());
+                       }
+                       silent.send(message, ctx.chatId());
+                   })
+                   .build();
+       }*/
+    public Ability showTransactions() {
         return Ability
                 .builder()
                 .name("trans")
@@ -126,11 +132,11 @@ public class MyAbilityExtension implements AbilityExtension {
                 .privacy(Privacy.PUBLIC)
                 .action(ctx -> {
                     String message = "Transactions:";
-                    for (Account account: accountList) {
+                    for (Account account : accountList) {
                         if (Math.abs(account.getChatId() - ctx.chatId()) == 0) {
                             List<Transaction> transactionList = account.getTransactions();
                             for (Transaction transaction : transactionList) {
-                               message += String.format("\n%s - %s by %s", transaction.getSum(), transaction.getComment(), transaction.getUser().getFirstName());
+                                message += String.format("\n%s - %s by %s", transaction.getSum(), transaction.getComment(), transaction.getUser().getFirstName());
                             }
                         }
                     }
@@ -139,7 +145,7 @@ public class MyAbilityExtension implements AbilityExtension {
                 .build();
     }
 
-    public Ability showBalance(){
+    public Ability showBalance() {
         return Ability
                 .builder()
                 .name("balance")
@@ -147,7 +153,7 @@ public class MyAbilityExtension implements AbilityExtension {
                 .privacy(Privacy.PUBLIC)
                 .action(ctx -> {
                     String message = "Balance of this account:";
-                    for (Account account: accountList) {
+                    for (Account account : accountList) {
                         if (Math.abs(account.getChatId() - ctx.chatId()) == 0) {
                             message += String.format("\n%s", account.getBalance());
                         }
@@ -160,7 +166,7 @@ public class MyAbilityExtension implements AbilityExtension {
     public Ability showPeople(){
         return Ability
                 .builder()
-                .name("member")
+                .name("members")
                 .locality(Locality.ALL)
                 .privacy(Privacy.PUBLIC)
                 .action(ctx -> {
@@ -179,7 +185,7 @@ public class MyAbilityExtension implements AbilityExtension {
                 .build();
     }
 
-    public Ability showDebtors(){
+    public Ability showDebtors() {
         return Ability
                 .builder()
                 .name("debtors")
@@ -187,11 +193,10 @@ public class MyAbilityExtension implements AbilityExtension {
                 .privacy(Privacy.PUBLIC)
                 .action(ctx -> {
                     String message = "Debtors:";
-                    //for (Transaction transaction: transactionList) {
-                    for (Account account: accountList) {
+                    for (Account account : accountList) {
                         if (Math.abs(account.getChatId() - ctx.chatId()) == 0) {
                             List<User> debtorsList = account.getDebtors();
-                            for (User person : debtorsList ) {
+                            for (User person : debtorsList) {
                                 message += String.format("\n%s: %s", person.getFirstName(), account.getUserBalance(person));
                             }
                         }
@@ -222,7 +227,7 @@ public class MyAbilityExtension implements AbilityExtension {
                 .build();
     }
 
-    public Ability stop(){
+    public Ability stop() {
         return Ability
                 .builder()
                 .name("stop")
@@ -230,7 +235,7 @@ public class MyAbilityExtension implements AbilityExtension {
                 .privacy(Privacy.PUBLIC)
                 .action(ctx -> {
                     for (Account account : accountList) {
-                        if (account.getChatId() == ctx.chatId()){
+                        if (Math.abs(account.getChatId() - ctx.chatId()) == 0) {
                             account.clearAccount();
                         }
                     }
