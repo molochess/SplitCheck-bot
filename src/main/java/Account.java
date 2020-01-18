@@ -1,74 +1,104 @@
+import org.jetbrains.annotations.NotNull;
 import org.telegram.telegrambots.meta.api.objects.User;
+import org.telegram.telegrambots.meta.updateshandlers.SentCallback;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class Account {
     private Long chatId;
-    private List<Transaction> transactions;
-    private List<User> users;
+    private Map<User, List<Transaction>> userListMap = new HashMap<>();
+    private List<Transaction> expanses = new LinkedList<>();
+    // private List<User> users;
     private float balance;
 
     Account(Long chatId) {
         this.chatId = chatId;
         this.balance = 0;
-        this.transactions = new LinkedList<>();
-        this.users = new LinkedList<>();
     }
 
-    public Long getChatId(){
-        return this.chatId;
+    public Long getChatId() { return this.chatId; }
+
+    public Map<User, List<Transaction>> getUserListMap() {
+        return this.userListMap;
     }
-    public List<Transaction> getTransactions(){
-        return this.transactions;
-    }
-    public List<User> getUserId() {
-        return this.users;
-    }
-    public float getBalance(){
+
+    public float getBalance() {
         return this.balance;
-    }
-    public void addTransactions (Transaction transaction){
-        this.transactions.add(transaction);
     }
 
     public float getUserBalance(User user) {
         float userBalance = 0;
-        for (Transaction transaction : this.transactions) {
-            if (transaction.getSum() < 0) {
-                userBalance += transaction.getSum() / users.size();
-            } else if (Math.abs(transaction.getUser().getId() - user.getId()) == 0) {
-                userBalance += transaction.getSum();
-            }
+        for (Transaction transaction : userListMap.get(user)) {
+            userBalance += transaction.getSum();
         }
         return userBalance;
     }
-    public List<User> getDebtors(){
-        List<User> debtors = new LinkedList<>();
-        for (User user:this.users) {
-            if (getUserBalance(user) < 0){
-                debtors.add(user);
+
+    public List<Transaction> getExpanses() {
+        return expanses;
+    }
+
+    public Map<User, Float> getBalanceMap() {
+        Float userBalance = 0.0F;
+        Map<User, Float> listToFloat = new HashMap<>();
+        for (User user : userListMap.keySet()) {
+            Float balance = 0.0F;
+            for (Transaction transaction : userListMap.get(user)) {
+                balance += transaction.getSum();
             }
+            listToFloat.put(user, balance);
         }
-        return debtors;
+        return listToFloat;
     }
-    public List<User> getOverpayers(){
-        List<User> overpayers = new LinkedList<>();
-        for (User user:this.users) {
-            if (getUserBalance(user) > 0){
-                overpayers.add(user);
-            }
-        }
-        return overpayers;
+
+    void clearAccount() {
+        userListMap.clear();
+        expanses.clear();
+        balance = 0;
     }
-    void clearAccount(){
-        this.transactions.clear();
-        this.users.clear();
-    }
-    void updateBalance(float sum) {
-        this.balance += sum;
-    }
+
     void addUser(User user) {
-        this.users.add(user);
+        this.userListMap.put(user, new ArrayList<>());
+    }
+
+    void addExpense(Transaction transaction) {
+        this.expanses.add(transaction);
+        this.balance += transaction.getSum();
+    }
+
+    void addSplitExpense(Transaction transaction) {
+        for (User user : userListMap.keySet()) {
+            userListMap.get(user).add(transaction);
+        }
+    }
+
+    void addPay(Transaction transaction, User user) {
+        userListMap.get(user).add(transaction);
+        this.balance += transaction.getSum();
+    }
+
+    public Map<User, Float> getDebtorsMap() {
+        Map<User, Float> debtorsMap = getBalanceMap();
+        debtorsMap.values().removeIf(balance -> balance >= 0);
+        return debtorsMap;
+    }
+
+    public Map<User, Float> getOverpayMap() {
+        Map<User, Float> overpayMap = getBalanceMap();
+        overpayMap.values().removeIf(balance -> balance < 0);
+        return overpayMap;
+    }
+
+    public List<Transaction> getTransactions() {
+        List<Transaction> transactions = new LinkedList<>();
+        for (Map.Entry<User, List<Transaction>> entry : userListMap.entrySet()) {
+            transactions = entry.getValue();
+        }
+        transactions.removeIf(transaction -> transaction.getSum() < 0);
+        transactions.addAll(expanses);
+        transactions.sort(Transaction::compareTransaction);
+        return transactions;
     }
 }
+
