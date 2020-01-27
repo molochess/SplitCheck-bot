@@ -6,8 +6,8 @@ import org.telegram.abilitybots.api.sender.SilentSender;
 import org.telegram.abilitybots.api.util.AbilityExtension;
 import org.telegram.telegrambots.meta.api.objects.User;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.io.Serializable;
+
 import java.util.List;
 import java.util.Map;
 
@@ -15,8 +15,6 @@ import java.util.Map;
 public class MyAbilityExtension implements AbilityExtension {
     private SilentSender silent;
     DBContext db;
-    //private List<Account> accountList = new ArrayList<Account>();
-    private Map<Long, Account> accountMap = new HashMap<>();
     public MyAbilityExtension(SilentSender silent, DBContext db) {
         this.silent = silent;
         this.db = db;
@@ -30,9 +28,8 @@ public class MyAbilityExtension implements AbilityExtension {
                 .privacy(Privacy.PUBLIC)
                 .input(0)
                 .action(ctx -> {
-                    //Account account = new Account(ctx.chatId());
-                   // accountList.add(account);
-                    accountMap.put(ctx.chatId(), new Account(ctx.chatId()));
+                    Map<Long, Account> accountMap = db.getMap("accounts");
+                    accountMap.put(ctx.chatId(), new Account());
                     silent.send("Hello! This bot was created to help you and your comrades " +
                             "when you need to split common expenses. " +
                             "Hope you'll love it!)", ctx.chatId());
@@ -59,13 +56,11 @@ public class MyAbilityExtension implements AbilityExtension {
                 .privacy(Privacy.PUBLIC)
                 .input(0)
                 .action(ctx -> {
-                   // for (Account account : accountList) {
-                  //      if (account.getChatId().equals(ctx.chatId())) {
-                           // account.addUser(ctx.user());
-                           // break;
-                   //     }
-                    //}
-                    accountMap.get(ctx.chatId()).addUser(ctx.user());
+                    Map<Long, Account> accountMap = db.getMap("accounts");
+                    Account account = accountMap.get(ctx.chatId());
+                    silent.send(String.format("User %s join this account", ctx.user().getFirstName()), ctx.chatId());
+                    account.addUser(ctx.user());
+                    accountMap.put(ctx.chatId(), account);
                     silent.send(String.format("User %s join this account", ctx.user().getFirstName()), ctx.chatId());
                 })
                 .build();
@@ -78,20 +73,14 @@ public class MyAbilityExtension implements AbilityExtension {
                 .locality(Locality.ALL)
                 .privacy(Privacy.PUBLIC)
                 .action(ctx -> {
-                    float sum = Float.parseFloat(ctx.firstArg());
+                    Double sum = Double.parseDouble(ctx.firstArg());
                     String comment = ctx.secondArg();
-                   /* for (Account account : accountList) {
-                      if (Math.abs(account.getChatId() - ctx.chatId()) == 0) {
-                            account.addExpense(new Transaction(-sum, ctx.user(), ctx.chatId(), comment));
-                            account.addSplitExpense(new Transaction(-sum / account.getUserListMap().size(),
-                                    ctx.user(), ctx.chatId(), comment));
-                            break;
-                        }
-                    }*/
-
-                    accountMap.get(ctx.chatId()).addExpense(new Transaction(-sum, ctx.user(), ctx.chatId(), comment));
-                    accountMap.get(ctx.chatId()).addSplitExpense(new Transaction(-sum / accountMap.get(ctx.chatId()).getUserListMap().size(),
+                    Map<Long, Account> accountMap = db.getMap("accounts");
+                    Account account = accountMap.get(ctx.chatId());
+                    account.addExpense(new Transaction(-sum, ctx.user(), ctx.chatId(), comment));
+                    account.addSplitExpense(new Transaction(-sum / account.getUserListMap().size(),
                             ctx.user(), ctx.chatId(), comment));
+                    accountMap.put(ctx.chatId(), (Account) account);
                     silent.send(String.format("Purchase %s for %s was added", sum, comment), ctx.chatId());
                 })
                 .build();
@@ -105,21 +94,15 @@ public class MyAbilityExtension implements AbilityExtension {
                 .privacy(Privacy.PUBLIC)
                 .input(2)
                 .action(ctx -> {
-                    float sum = Float.parseFloat(ctx.firstArg());
+                    Double sum = Double.parseDouble(ctx.firstArg());
                     String comment = ctx.secondArg();
                     Transaction transaction = new Transaction(sum, ctx.user(), ctx.chatId(), comment);
-                   /* for (Account account : accountList) {
-                        if (account.getChatId().equals(ctx.chatId())) {
-                            account.addPay(transaction, ctx.user());
-                        }
-                    }*/
-                  // if (accountMap.get(ctx.chatId()).getUserListMap().get(ctx.user()) == null ) {
-                    //   silent.send(String.format("User %s didnt join this account", ctx.user().getFirstName()), ctx.chatId());
-                   //} else {
-                    accountMap.get(ctx.chatId()).addPay(transaction, ctx.user());
+                    Map<Long, Account> accountMap = db.getMap("accounts");
+                    Account account = accountMap.get(ctx.chatId());
+                    account.addPay(transaction, ctx.user());
+                    accountMap.put(ctx.chatId(), account);
                     silent.send(String.format("Pay %s for %s was added by %s", sum, comment,
                             ctx.user().getFirstName()), ctx.chatId());
-                    //}
                 })
                 .build();
     }
@@ -132,17 +115,9 @@ public class MyAbilityExtension implements AbilityExtension {
                 .privacy(Privacy.PUBLIC)
                 .action(ctx -> {
                     String message = "Transactions:";
-                   /* for (Account account : accountList) {
-                        if (account.getChatId().equals(ctx.chatId())) {
-                            List<Transaction> transactionList = account.getTransactions();
-                            for (Transaction transaction : transactionList) {
-                                message += String.format("\n%s - %s by %s %s", transaction.getSum(),
-                                        transaction.getComment(), transaction.getUser().getFirstName(),
-                                        transaction.getDate());
-                            }
-                        }
-                    }*/
-                    List<Transaction> transactionList = accountMap.get(ctx.chatId()).getTransactions();
+                    Map<Long, Account> accountMap = db.getMap("accounts");
+                    Account account = accountMap.get(ctx.chatId());
+                    List<Transaction> transactionList = account.getTransactions();
                     for (Transaction transaction : transactionList) {
                         message += String.format("\n%s - %s by %s %s", transaction.getSum(),
                                 transaction.getComment(), transaction.getUser().getFirstName(),
@@ -161,12 +136,9 @@ public class MyAbilityExtension implements AbilityExtension {
                 .privacy(Privacy.PUBLIC)
                 .action(ctx -> {
                     String message = "Balance of this account:";
-                    /*for (Account account : accountList) {
-                        if (Math.abs(account.getChatId() - ctx.chatId()) == 0) {
-                            message += String.format("\n%s", account.getBalance());
-                        }
-                    }*/
-                    message += String.format("\n%s", accountMap.get(ctx.chatId()).getBalance());
+                    Map<Long, Account> accountMap = db.getMap("accounts");
+                    Account account = accountMap.get(ctx.chatId());
+                    message += String.format("\n%s", account.getBalance());
                     silent.send(message, ctx.chatId());
                 })
                 .build();
@@ -180,17 +152,10 @@ public class MyAbilityExtension implements AbilityExtension {
                 .privacy(Privacy.PUBLIC)
                 .action(ctx -> {
                     String message = "Expanses:";
-                   /* for (Account account : accountList) {
-                        if (account.getChatId().equals(ctx.chatId())) {
-                            for (User person : account.getUserListMap().keySet()) {
-                                message += String.format("\n%s: %s", person.getFirstName(),
-                                        account.getUserBalance(person));
-                            }
-                        }
-                    }*/
-                    for (User person : accountMap.get(ctx.chatId()).getUserListMap().keySet()) {
-                        message += String.format("\n%s: %s", person.getFirstName(),
-                                accountMap.get(ctx.chatId()).getUserBalance(person));
+                    Map<Long, Account> accountMap = db.getMap("accounts");
+                    Account account = accountMap.get(ctx.chatId());
+                    for (User person : account.getUserListMap().keySet()) {
+                        message += String.format("\n%s: %s", person.getFirstName(), account.getUserBalance(person));
                     }
                     silent.send(message, ctx.chatId());
                 })
@@ -205,17 +170,10 @@ public class MyAbilityExtension implements AbilityExtension {
                 .privacy(Privacy.PUBLIC)
                 .action(ctx -> {
                     String message = "Members:";
-                    /*for (Account account : accountList) {
-                        if (account.getChatId().equals(ctx.chatId())) {
-                            for (User person : account.getUserListMap().keySet()) {
-                                message += String.format("\n%s: %s", person.getFirstName(),
-                                        account.getUserBalance(person));
-                            }
-                        }
-                    }*/
-                    for (User person : accountMap.get(ctx.chatId()).getUserListMap().keySet()) {
-                        message += String.format("\n%s: %s", person.getFirstName(),
-                                accountMap.get(ctx.chatId()).getUserBalance(person));
+                    Map<Long, Account> accountMap = db.getMap("accounts");
+                    Account account = accountMap.get(ctx.chatId());
+                    for (User person : account.getUserListMap().keySet()) {
+                        message += String.format("\n%s: %s", person.getFirstName(), account.getUserBalance(person));
                     }
                     silent.send(message, ctx.chatId());
                 })
@@ -230,17 +188,10 @@ public class MyAbilityExtension implements AbilityExtension {
                 .privacy(Privacy.PUBLIC)
                 .action(ctx -> {
                     String message = "Debtors:";
-                    /*for (Account account : accountList) {
-                        if (account.getChatId().equals(ctx.chatId())) {
-                            for (User person : account.getDebtorsMap().keySet()) {
-                                message += String.format("\n%s: %s", person.getFirstName(),
-                                        account.getUserBalance(person));
-                            }
-                        }
-                    }*/
-                    for (User person : accountMap.get(ctx.chatId()).getDebtorsMap().keySet()) {
-                        message += String.format("\n%s: %s", person.getFirstName(),
-                                accountMap.get(ctx.chatId()).getUserBalance(person));
+                    Map<Long, Account> accountMap = db.getMap("accounts");
+                    Account account = accountMap.get(ctx.chatId());
+                    for (User person : account.getDebtorsMap().keySet()) {
+                        message += String.format("\n%s: %s", person.getFirstName(), account.getUserBalance(person));
                     }
                     silent.send(message, ctx.chatId());
                 })
@@ -255,17 +206,10 @@ public class MyAbilityExtension implements AbilityExtension {
                 .privacy(Privacy.PUBLIC)
                 .action(ctx -> {
                     String message = "Overpaid members:";
-                   /* for (Account account : accountList) {
-                        if (account.getChatId().equals(ctx.chatId())) {
-                            for (User person : account.getOverpayMap().keySet()) {
-                                message += String.format("\n%s: %s", person.getFirstName(),
-                                        account.getUserBalance(person));
-                            }
-                        }
-                    }*/
-                    for (User person : accountMap.get(ctx.chatId()).getOverpayMap().keySet()) {
-                        message += String.format("\n%s: %s", person.getFirstName(),
-                                accountMap.get(ctx.chatId()).getUserBalance(person));
+                    Map<Long, Account> accountMap = db.getMap("accounts");
+                    Account account = accountMap.get(ctx.chatId());
+                    for (User person : account.getOverpayMap().keySet()) {
+                        message += String.format("\n%s: %s", person.getFirstName(), account.getUserBalance(person));
                     }
                     silent.send(message, ctx.chatId());
                 })
@@ -279,12 +223,10 @@ public class MyAbilityExtension implements AbilityExtension {
                 .locality(Locality.ALL)
                 .privacy(Privacy.PUBLIC)
                 .action(ctx -> {
-                    /*for (Account account : accountList) {
-                        if (account.getChatId().equals(ctx.chatId())) {
-                            account.clearAccount();
-                        }
-                    }*/
-                    accountMap.get(ctx.chatId()).clearAccount();
+                    Map<Long, Account> accountMap = db.getMap("accounts");
+                    Account account = accountMap.get(ctx.chatId());
+                    account.clearAccount();
+                    accountMap.put(ctx.chatId(),account);
                     silent.send("Account was cleared", ctx.chatId());
                 })
                 .build();

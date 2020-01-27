@@ -1,15 +1,16 @@
 import org.telegram.telegrambots.meta.api.objects.User;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 
-public class Transaction {
-    private float sum;
+public class Transaction implements Serializable {
+    private Double sum;
     private User user; //?
     private Long chatId; //?
     private String comment; //придумать-таки как организовать в рамках бота
     private LocalDate date;
 
-    Transaction(float sum, User user, Long chatId, String comment) {
+    Transaction(Double sum, User user, Long chatId, String comment) {
         this.sum = sum;
         this.user = user;
         this.chatId = chatId;
@@ -17,7 +18,7 @@ public class Transaction {
         this.date = LocalDate.now();
     }
 
-    public float getSum() {
+    public Double getSum() {
         return sum;
     }
 

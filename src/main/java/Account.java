@@ -2,33 +2,41 @@ import org.jetbrains.annotations.NotNull;
 import org.telegram.telegrambots.meta.api.objects.User;
 import org.telegram.telegrambots.meta.updateshandlers.SentCallback;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Account {
-    private Long chatId;
-    private Map<User, List<Transaction>> userListMap = new HashMap<>();
-    private List<Transaction> expanses = new LinkedList<>();
-    // private List<User> users;
-    private float balance;
+public class Account implements Serializable{
+ //   protected Long chatId;
+    protected Map<User, List<Transaction>> userListMap;
+    protected List<Transaction> expanses;
+    protected double balance;
+    private static final long serialVersionUID = -2529999418945499244L;
 
-    Account(Long chatId) {
+    Account() {
+        userListMap = new HashMap<>();
+        expanses = new ArrayList<>();
+        balance = 0.0;
+    }
+   /* Account(Long chatId) {
+        userListMap = new HashMap<>();
+        expanses = new ArrayList<>();
         this.chatId = chatId;
-        this.balance = 0;
+        this.balance = 0.0;
     }
 
-    public Long getChatId() { return this.chatId; }
+    public Long getChatId() { return this.chatId; }*/
 
     public Map<User, List<Transaction>> getUserListMap() {
         return this.userListMap;
     }
 
-    public float getBalance() {
+    public Double getBalance() {
         return this.balance;
     }
 
-    public float getUserBalance(User user) {
-        float userBalance = 0;
+    public Double getUserBalance(User user) {
+        Double userBalance = 0.0;
         for (Transaction transaction : userListMap.get(user)) {
             userBalance += transaction.getSum();
         }
@@ -39,23 +47,23 @@ public class Account {
         return expanses;
     }
 
-    public Map<User, Float> getBalanceMap() {
-        Float userBalance = 0.0F;
-        Map<User, Float> listToFloat = new HashMap<>();
+    public Map<User, Double> getBalanceMap() {
+        Double userBalance = 0.0;
+        Map<User, Double> listToDouble = new HashMap<>();
         for (User user : userListMap.keySet()) {
-            Float balance = 0.0F;
+            Double balance = 0.0;
             for (Transaction transaction : userListMap.get(user)) {
                 balance += transaction.getSum();
             }
-            listToFloat.put(user, balance);
+            listToDouble.put(user, balance);
         }
-        return listToFloat;
+        return listToDouble;
     }
 
     void clearAccount() {
         userListMap.clear();
         expanses.clear();
-        balance = 0;
+        balance = 0.0;
     }
 
     void addUser(User user) {
@@ -78,14 +86,14 @@ public class Account {
         this.balance += transaction.getSum();
     }
 
-    public Map<User, Float> getDebtorsMap() {
-        Map<User, Float> debtorsMap = getBalanceMap();
+    public Map<User, Double> getDebtorsMap() {
+        Map<User, Double> debtorsMap = getBalanceMap();
         debtorsMap.values().removeIf(balance -> balance >= 0);
         return debtorsMap;
     }
 
-    public Map<User, Float> getOverpayMap() {
-        Map<User, Float> overpayMap = getBalanceMap();
+    public Map<User, Double> getOverpayMap() {
+        Map<User, Double> overpayMap = getBalanceMap();
         overpayMap.values().removeIf(balance -> balance < 0);
         return overpayMap;
     }
